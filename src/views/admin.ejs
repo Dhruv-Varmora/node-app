@@ -1,0 +1,194 @@
+<div class="row">
+    <div class="col-12">
+        <!-- Create New User Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Create New User</h5>
+            </div>
+            <div class="card-body">
+                <form id="createUserForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" id="userName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="userEmail" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" id="userPassword" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select class="form-control" id="userRole" required>
+                                    <option value="admin">Admin</option>
+                                    <option value="superadmin">Super Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Users List -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">All Users</h5>
+                <a href="/users/list" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-list"></i> View Full List
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        
+    </div>
+</div>
+
+<script>
+// Load users on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+});
+
+// Create new user
+document.getElementById('createUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const userData = {
+        name: document.getElementById('userName').value,
+        email: document.getElementById('userEmail').value,
+        password: document.getElementById('userPassword').value,
+        role: document.getElementById('userRole').value
+    };
+    
+    try {
+        const response = await fetch('/api/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        if (response.ok) {
+            alert('User created successfully!');
+            document.getElementById('createUserForm').reset();
+            loadUsers();
+            loadUsersForTaskAssignment();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error creating user: ' + error.message);
+    }
+});
+
+
+// Load users
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        const users = await response.json();
+        
+        const tbody = document.getElementById('usersTable');
+        tbody.innerHTML = '';
+        
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge bg-${user.role === 'superadmin' ? 'danger' : 'primary'}">${user.role}</span></td>
+                <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewUserTasks(${user.id})">View Tasks</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+
+// (All Tasks moved to /todos page for admins)
+
+// View tasks for specific user
+async function viewUserTasks(userId) {
+    try {
+        const response = await fetch(`/api/todos/user/${userId}`);
+        const tasks = await response.json();
+        
+        let message = `Tasks for User ID ${userId}:\n\n`;
+        if (tasks.length === 0) {
+            message += 'No tasks assigned.';
+        } else {
+            tasks.forEach(task => {
+                message += `• ${task.title} (${task.completed ? 'Completed' : 'Pending'})\n`;
+            });
+        }
+        
+        alert(message);
+    } catch (error) {
+        console.error('Error loading user tasks:', error);
+        alert('Error loading user tasks');
+    }
+}
+
+// Get user role color for badge
+function getUserRoleColor(role) {
+    switch(role) {
+        case 'superadmin': return 'danger';
+        case 'admin': return 'primary';
+        default: return 'secondary';
+    }
+}
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+</script>

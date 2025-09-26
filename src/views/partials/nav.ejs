@@ -1,0 +1,32 @@
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+	<div class="container">
+		<a class="navbar-brand" href="/">To-do App</a>
+		<div class="collapse navbar-collapse">
+			<ul class="navbar-nav ms-auto">
+				<% if (currentUserId) { %>
+					
+					<% if (userRole === 'superadmin') { %>
+						<li class="nav-item"><a class="nav-link" href="/users/admin">Add User</a></li>
+					<% } %>
+					<% if (userRole === 'admin' || userRole === 'superadmin') { %>
+						<li class="nav-item"><a class="nav-link" href="/users/list">User List</a></li>
+						<li class="nav-item"><a class="nav-link" href="/todos">All Tasks</a></li>
+						<li class="nav-item"><a class="nav-link" href="/users/assign-task">Assign Task</a></li>
+					<% } %>
+					<li class="nav-item"><a class="nav-link" href="/users/me">Profile</a></li>
+					<li class="nav-item">
+						<form action="/logout" method="post">
+							<button class="btn btn-link nav-link" type="submit">Logout</button>
+						</form>
+					</li>
+					
+				<% } else { %>
+					<li class="nav-item"><a class="nav-link" href="/login">Login</a></li>
+					<li class="nav-item"><a class="nav-link" href="/register">Register</a></li>
+				<% } %>
+			</ul>
+		</div>
+	</div>
+</nav>
+
+

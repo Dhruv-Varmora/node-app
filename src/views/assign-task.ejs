@@ -1,0 +1,329 @@
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">Assign Task</h2>
+        
+        <!-- Assign Task Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Create and Assign New Task</h5>
+            </div>
+            <div class="card-body">
+                <form id="assignTaskForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Select User</label>
+                                <select class="form-control" id="taskUserId" required>
+                                    <option value="">Loading users...</option>
+                                </select>
+                                <div class="form-text">Choose which user to assign this task to</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Task Priority</label>
+                                <select class="form-control" id="taskPriority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Task Title</label>
+                        <input type="text" class="form-control" id="taskTitle" placeholder="Enter task title..." required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Task Description (Optional)</label>
+                        <textarea class="form-control" id="taskDescription" rows="3" placeholder="Enter task description..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Due Date (Optional)</label>
+                                <input type="date" class="form-control" id="taskDueDate">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Estimated Time (Optional)</label>
+                                <select class="form-control" id="taskEstimatedTime">
+                                    <option value="">Select time...</option>
+                                    <option value="15">15 minutes</option>
+                                    <option value="30">30 minutes</option>
+                                    <option value="60">1 hour</option>
+                                    <option value="120">2 hours</option>
+                                    <option value="240">4 hours</option>
+                                    <option value="480">8 hours</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Assign Task
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearForm()">
+                            <i class="bi bi-arrow-clockwise"></i> Clear Form
+                        </button>
+                        <a href="/users/list" class="btn btn-outline-primary">
+                            <i class="bi bi-list"></i> View User List
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Assignments -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Task Assignments</h5>
+                <button class="btn btn-outline-primary btn-sm" onclick="loadRecentTasks()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Assigned To</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Assigned Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTasksTable">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading recent tasks...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load users and recent tasks when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+    loadRecentTasks();
+});
+
+// Load users for dropdown
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
+        }
+        const users = await response.json();
+        displayUsers(users);
+    } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('taskUserId').innerHTML = '<option value="">Error loading users</option>';
+    }
+}
+
+// Display users in dropdown
+function displayUsers(users) {
+    const select = document.getElementById('taskUserId');
+    select.innerHTML = '<option value="">Select a user...</option>';
+    
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.name} (${user.email}) - ${user.role.toUpperCase()}`;
+        select.appendChild(option);
+    });
+}
+
+// Load recent tasks
+async function loadRecentTasks() {
+    try {
+        const response = await fetch('/api/todos/all');
+        if (!response.ok) {
+            throw new Error('Failed to fetch tasks');
+        }
+        const tasks = await response.json();
+        displayRecentTasks(tasks.slice(0, 10)); // Show only recent 10 tasks
+    } catch (error) {
+        console.error('Error loading recent tasks:', error);
+        document.getElementById('recentTasksTable').innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-danger">
+                    Error loading tasks: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Display recent tasks
+function displayRecentTasks(tasks) {
+    const tbody = document.getElementById('recentTasksTable');
+    
+    if (tasks.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    No recent task assignments
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    tasks.forEach(task => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <strong>${task.title}</strong>
+            </td>
+            <td>
+                <span class="badge bg-info">${task.user_name}</span>
+                <br><small class="text-muted">${task.user_email}</small>
+            </td>
+            <td>
+                <span class="badge bg-warning">Medium</span>
+            </td>
+            <td>
+                <span class="badge bg-${task.completed ? 'success' : 'warning'}">
+                    ${task.completed ? 'Completed' : 'Pending'}
+                </span>
+            </td>
+            <td>
+                <small class="text-muted">
+                    ${formatDate(task.created_at)}
+                </small>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Format date
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Assign task form submission
+document.getElementById('assignTaskForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const taskData = {
+        title: document.getElementById('taskTitle').value,
+        userId: document.getElementById('taskUserId').value
+    };
+    
+    // Validate required fields
+    if (!taskData.title || !taskData.userId) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/todos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            alert(`Task assigned successfully to user ID ${result.user_id}!`);
+            
+            // Clear form
+            clearForm();
+            
+            // Reload recent tasks
+            loadRecentTasks();
+        } else {
+            const error = await response.json();
+            alert('Error assigning task: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error assigning task: ' + error.message);
+    }
+});
+
+// Clear form
+function clearForm() {
+    document.getElementById('assignTaskForm').reset();
+    document.getElementById('taskUserId').innerHTML = '<option value="">Select a user...</option>';
+    loadUsers(); // Reload users
+}
+
+// Get priority color
+function getPriorityColor(priority) {
+    switch(priority) {
+        case 'high': return 'danger';
+        case 'medium': return 'warning';
+        case 'low': return 'success';
+        default: return 'secondary';
+    }
+}
+</script>
+
+<style>
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.spinner-border {
+    width: 1rem;
+    height: 1rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+</style>

@@ -1,0 +1,154 @@
+<div class="row">
+	<div class="col-md-10 col-lg-12">
+
+		<% if (allTasks) { %>
+			<div class="card mb-3">
+				<div class="card-header">
+					<h5 class="mb-0">All Tasks</h5>
+				</div>
+				<div class="card-body">
+					<div class="row g-2 align-items-end">
+						<div class="col-md-4">
+							<label class="form-label">Search</label>
+							<input id="filterSearch" type="text" class="form-control" placeholder="Search task or user..." />
+						</div>
+						<div class="col-md-3">
+							<label class="form-label">Role</label>
+							<select id="filterRole" class="form-select">
+								<option value="">All roles</option>
+								<option value="admin">Admin</option>
+								<option value="superadmin">Superadmin</option>
+							</select>
+						</div>
+						<div class="col-md-3">
+							<label class="form-label">Status</label>
+							<select id="filterStatus" class="form-select">
+								<option value="">All statuses</option>
+								<option value="completed">Completed</option>
+								<option value="pending">Pending</option>
+							</select>
+						</div>
+						<div class="col-md-2 text-md-end">
+							<span id="taskCount" class="badge bg-secondary">0 tasks</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		<% } %>
+
+		<div class="card">
+			<div class="card-header">
+				<h5 class="mb-0"><%= allTasks ? 'All Tasks' : 'Assigned Tasks' %></h5>
+			</div>
+			<div class="card-body p-0">
+				<% if (!todos || todos.length === 0) { %>
+					<div class="p-4 text-center text-muted">No tasks assigned.</div>
+				<% } else { %>
+					<div class="table-responsive">
+						<table class="table table-striped table-hover mb-0 align-middle">
+    						<thead class="table-light">
+    							<tr>
+									<% if (allTasks) { %>
+										<th style="width: 34%">Task</th>
+										<th style="width: 24%">Assigned To</th>
+										<th style="width: 12%">Role</th>
+										<th style="width: 12%">Status</th>
+										<th style="width: 18%">Created</th>
+										<th style="width: 12%" class="text-end">Action</th>
+									<% } else { %>
+										<th style="width: 60%">Task</th>
+										<th style="width: 20%">Status</th>
+										<th style="width: 20%" class="text-end">Action</th>
+									<% } %>
+    							</tr>
+    						</thead>
+							<tbody id="tasksBody">
+								<% (todos || []).forEach(t => { %>
+                                <tr
+                                    <% if (allTasks) { %>
+                                        data-role="<%= (t.user_role || '').toLowerCase() %>"
+                                        data-status="<%= t.completed ? 'completed' : 'pending' %>"
+                                        data-search="<%= [t.title, t.user_name, t.user_email].join(' ').toLowerCase() %>"
+                                    <% } %>
+                                >
+    									<td>
+    										<span class="<%= t.completed ? 'text-decoration-line-through text-muted' : '' %>"><%= t.title %></span>
+    									</td>
+    									<% if (allTasks) { %>
+    										<td>
+    											<div class="d-flex flex-column">
+    												<strong><%= t.user_name %></strong>
+    												<small class="text-muted"><%= t.user_email %></small>
+    											</div>
+    										</td>
+    										<td>
+    											<span class="badge <%= (t.user_role === 'superadmin') ? 'bg-danger' : 'bg-primary' %>"><%= t.user_role ? t.user_role.toUpperCase() : 'USER' %></span>
+    										</td>
+                                        <td>
+                                            <span class="badge <%= t.completed ? 'bg-success' : 'bg-warning' %>"><%= t.completed ? 'Completed' : 'Pending' %></span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted"><%= new Date(t.created_at).toLocaleString() %></small>
+                                        </td>
+                                    <% } else { %>
+                                        <td>
+                                            <span class="badge <%= t.completed ? 'bg-success' : 'bg-warning' %>"><%= t.completed ? 'Completed' : 'Pending' %></span>
+                                        </td>
+                                    <% } %>
+                                        <td class="text-end">
+                                            <form method="post" action="/todos/<%= t.id %>/toggle" class="d-inline">
+                                                <button class="btn btn-sm <%= t.completed ? 'btn-outline-secondary' : 'btn-outline-success' %>" type="submit">
+                                                    <% if (t.completed) { %>
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>
+                                                    <% } else { %>
+                                                        <i class="bi bi-check2-circle me-1"></i>
+                                                    <% } %>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+    							<% }) %>
+    						</tbody>
+    					</table>
+					</div>
+				<% } %>
+			</div>
+		</div>
+	</div>
+</div>
+
+<% if (allTasks) { %>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	const $search = document.getElementById('filterSearch');
+	const $role = document.getElementById('filterRole');
+	const $status = document.getElementById('filterStatus');
+	const $tbody = document.getElementById('tasksBody');
+	const $count = document.getElementById('taskCount');
+
+	function normalize(s) { return (s || '').toString().toLowerCase(); }
+
+	function applyFilters() {
+		const q = normalize($search.value);
+		const role = normalize($role.value);
+		const status = normalize($status.value);
+		let visible = 0;
+		[...$tbody.querySelectorAll('tr')].forEach(tr => {
+			const mRole = tr.getAttribute('data-role') || '';
+			const mStatus = tr.getAttribute('data-status') || '';
+			const mSearch = tr.getAttribute('data-search') || '';
+			const pass = (!role || mRole === role) && (!status || mStatus === status) && (!q || mSearch.includes(q));
+			tr.style.display = pass ? '' : 'none';
+			if (pass) visible++;
+		});
+		$count.textContent = `${visible} task${visible === 1 ? '' : 's'}`;
+	}
+
+	$search.addEventListener('input', applyFilters);
+	$role.addEventListener('change', applyFilters);
+	$status.addEventListener('change', applyFilters);
+	applyFilters();
+});
+</script>
+<% } %>
+

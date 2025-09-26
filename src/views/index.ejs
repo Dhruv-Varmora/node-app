@@ -1,0 +1,12 @@
+<div class="text-center py-5">
+	<h1 class="mb-3">Welcome to the To-do App</h1>
+	<p class="lead">Simple, fast, and secure to-do list with authentication.</p>
+	<% if (!currentUserId) { %>
+		<a href="/register" class="btn btn-primary me-2">Get Started</a>
+		<a href="/login" class="btn btn-outline-secondary">Login</a>
+	<% } else { %>
+		<a href="/todos" class="btn btn-success">Go to my to-dos</a>
+	<% } %>
+</div>
+
+

@@ -1,0 +1,27 @@
+<div class="row">
+	<div class="col-md-7">
+		<h2 class="mb-3">My Profile</h2>
+		<% if (user) { %>
+		<form method="post" action="/users/me" class="card card-body mb-3">
+			<div class="mb-3">
+				<label class="form-label">Name</label>
+				<input class="form-control" name="name" value="<%= user.name %>" required />
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Email</label>
+				<input type="email" class="form-control" name="email" value="<%= user.email %>" required />
+			</div>
+			<div class="mb-3">
+				<label class="form-label">New Password (optional)</label>
+				<input type="password" class="form-control" name="password" />
+			</div>
+			<button class="btn btn-primary" type="submit">Save</button>
+		</form>
+		<form method="post" action="/users/me/delete" onsubmit="return confirm('Delete account? This cannot be undone.')">
+			<button class="btn btn-outline-danger">Delete Account</button>
+		</form>
+		<% } %>
+	</div>
+</div>
+
+
